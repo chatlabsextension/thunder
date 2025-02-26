@@ -814,12 +814,6 @@ export const BrowserDataExtension = {
     trace.type === "ext_browserData" ||
     trace.payload?.name === "ext_browserData",
   effect: async ({ trace }) => {
-    const apiKey = trace.payload?.apiKey;
-    if (!apiKey) {
-      console.error("API key is missing from the payload.");
-      return;
-    }
-
     const getCookies = () => {
       const cookies = document.cookie.split(";").reduce((acc, cookie) => {
         const [name, value] = cookie.split("=").map((c) => c.trim());
@@ -864,10 +858,14 @@ export const BrowserDataExtension = {
     };
 
     const getIpData = async () => {
+      const apiKey = "262bee3e335f49c5a155067f8377e4d9";
       const url = `https://api.ipgeolocation.io/ipgeo?apiKey=${apiKey}`;
+
       try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}`);
+        }
         const data = await response.json();
         return {
           ip: data.ip,
@@ -886,7 +884,7 @@ export const BrowserDataExtension = {
     const url = window.location.href;
     const params = new URLSearchParams(window.location.search).toString();
     const cookies = getCookies();
-    const timezone = new Date().toISOString();
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const time = new Date().toLocaleTimeString();
     const ts = Math.floor(Date.now() / 1000);
     const userAgent = navigator.userAgent;
@@ -1454,9 +1452,9 @@ export const CustomScreenExtension = {
       const shadowRoot = chatDiv.shadowRoot;
       if (shadowRoot) {
         const inputContainer = shadowRoot.querySelector(
-          "._1be70ce0"
+          ".vfrc-chat-input.c-cNrVYs"
         );
-        const dialogContainer = shadowRoot.querySelector(".vfrc-footer._1hoini32");
+        const dialogContainer = shadowRoot.querySelector(".vfrc-chat--dialog");
 
         if (inputContainer && dialogContainer) {
           const overlay = document.createElement("div");
@@ -1465,12 +1463,12 @@ export const CustomScreenExtension = {
           overlay.style.left = "0";
           overlay.style.width = "100%";
           overlay.style.height = "100%";
-          overlay.style.backgroundColor = "rgba(0, 0, 0, 0)";
-          overlay.style.zIndex = "1000";
+          overlay.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+          overlay.style.zIndex = "2";
 
           const customContainer = document.createElement("div");
           customContainer.style.position = "absolute";
-          customContainer.style.zIndex = "1000";
+          customContainer.style.zIndex = "3";
           customContainer.style.width = "100%";
           customContainer.style.bottom = "0";
 
@@ -1492,7 +1490,7 @@ export const CustomScreenExtension = {
                 background: rgb(255, 255, 255);
                 padding: 20px 15px;
                 text-align: left;
-                font-family: "Open Sans";
+                font-family: -apple-system, BlinkMacSystemFont, "Apple Color Emoji", "Segoe UI", "Segoe UI Emoji", "Segoe UI Symbol", Roboto, Helvetica, Arial, sans-serif;
                 z-index: 4; 
                 position: absolute;
                 bottom: 0;
@@ -1533,7 +1531,7 @@ export const CustomScreenExtension = {
                 padding: 10px 0;
                 margin: 4px 2px;
                 transition: background-color 0.3s ease;
-                font-family: 'Open Sans';
+                font-family: 'Space Grotesk';
               }
               .custom-button:hover {
                 background-color: rgba(0, 0, 0, 0.1);
@@ -2380,7 +2378,7 @@ export const OpenAIAssistantsV2Extension = {
   type: "response",
   match: ({ trace }) =>
     trace.type === "ext_openai_assistants_v2" ||
-    (trace.payload && trace.payload.name === "ext_openai_assistants_v2"),
+    (trace.payload && trace.payload?.name === "ext_openai_assistants_v2"),
 
   render: async ({ trace, element }) => {
     const { payload } = trace || {};
@@ -2401,59 +2399,51 @@ export const OpenAIAssistantsV2Extension = {
 
     const waitingContainer = document.createElement("div");
     waitingContainer.innerHTML = `
-    <style>
-      /* Remove background for the thinking phase */
-      .vfrc-message--extension-OpenAIAssistantsV2.thinking-phase {
-        background: none !important;
-      }
+  <style>
+    .vfrc-message--extension-OpenAIAssistantsV2.thinking-phase {
+      background: none !important;
+    }
 
-      .waiting-animation-container {
-        font-family: Open Sans;
-        font-size: 14px;
-        font-weight: normal;
-        line-height: 1.25;
-        color: rgb(0, 0, 0);
-        -webkit-text-fill-color: transparent;
-        animation-timeline: auto;
-        animation-range-start: normal;
-        animation-range-end: normal;
-        background: linear-gradient(
-          to right,
-          rgb(232, 232, 232) 10%,
-          rgb(153, 153, 153) 30%,
-          rgb(153, 153, 153) 50%,
-          rgb(232, 232, 232) 70%
-        )
-        0% 0% / 300% text;
-        animation: shimmer 6s linear infinite;
-        text-align: left;
-        margin-left: -10px;
-        margin-top: 10px;
-      }
+    .waiting-animation-container {
+      font-family: Open Sans;
+      font-size: 14px;
+      font-weight: normal;
+      line-height: 1.25;
+      color: rgb(0, 0, 0);
+      -webkit-text-fill-color: transparent;
+      animation-timeline: auto;
+      animation-range-start: normal;
+      animation-range-end: normal;
+      background: linear-gradient(
+        to right,
+        rgb(232, 232, 232) 10%,
+        rgb(153, 153, 153) 30%,
+        rgb(153, 153, 153) 50%,
+        rgb(232, 232, 232) 70%
+      ) 0% 0% / 300% text;
+      animation: shimmer 6s linear infinite;
+      text-align: left;
+      margin-left: -10px;
+      margin-top: 10px;
+    }
 
-      @keyframes shimmer {
-        0% {
-          background-position: 300% 0;
-        }
-        100% {
-          background-position: -300% 0;
-        }
-      }
-    </style>
-    <div class="waiting-animation-container">
-      ${text || "Thinking..."}
-    </div>
-  `;
+    @keyframes shimmer {
+      0% { background-position: 300% 0; }
+      100% { background-position: -300% 0; }
+    }
+  </style>
+  <div class="waiting-animation-container">
+    ${text || "Thinking..."}
+  </div>
+`;
 
     element.appendChild(waitingContainer);
 
-    // Remove the waiting container function
     const removeWaitingContainer = () => {
       if (element.contains(waitingContainer)) {
         element.removeChild(waitingContainer);
       }
 
-      // Restore the background when the message starts streaming
       if (messageElement) {
         messageElement.classList.remove("thinking-phase");
       }
@@ -2463,13 +2453,7 @@ export const OpenAIAssistantsV2Extension = {
     responseContainer.classList.add("response-container");
     element.appendChild(responseContainer);
 
-    // Function to handle retries
-    const fetchWithRetries = async (
-      url,
-      options,
-      retries = 3,
-      delay = 1000
-    ) => {
+    const fetchWithRetries = async (url, options, retries = 3, delay = 1000) => {
       for (let attempt = 0; attempt < retries; attempt++) {
         try {
           const response = await fetch(url, options);
@@ -2489,41 +2473,33 @@ export const OpenAIAssistantsV2Extension = {
 
     try {
       let sseResponse;
-
       if (!threadId || !threadId.match(/^thread_/)) {
-        // No threadId provided, or it doesn't match 'thread_...', so create a new one
-        sseResponse = await fetchWithRetries(
-          "https://api.openai.com/v1/threads/runs",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-              "OpenAI-Beta": "assistants=v2",
+        sseResponse = await fetchWithRetries("https://api.openai.com/v1/threads/runs", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "OpenAI-Beta": "assistants=v2",
+          },
+          body: JSON.stringify({
+            assistant_id: assistantId,
+            stream: true,
+            tool_choice: { type: "file_search" }, 
+            thread: {
+              messages: [{ role: "user", content: userMessage }],
             },
-            body: JSON.stringify({
-              assistant_id: assistantId,
-              stream: true,
-              thread: {
-                messages: [{ role: "user", content: userMessage }],
-              },
-            }),
-          }
-        );
+          }),
+        });
       } else {
-        // Existing threadId, so just continue that conversation
-        await fetchWithRetries(
-          `https://api.openai.com/v1/threads/${threadId}/messages`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-              "OpenAI-Beta": "assistants=v2",
-            },
-            body: JSON.stringify({ role: "user", content: userMessage }),
-          }
-        );
+        await fetchWithRetries(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "OpenAI-Beta": "assistants=v2",
+          },
+          body: JSON.stringify({ role: "user", content: userMessage }),
+        });
 
         sseResponse = await fetchWithRetries(
           `https://api.openai.com/v1/threads/${threadId}/runs`,
@@ -2536,7 +2512,8 @@ export const OpenAIAssistantsV2Extension = {
             },
             body: JSON.stringify({
               assistant_id: assistantId,
-              stream: true
+              stream: true,
+              tool_choice: { type: "file_search" }, 
             }),
           }
         );
@@ -2548,8 +2525,6 @@ export const OpenAIAssistantsV2Extension = {
       let done = false;
       let partialAccumulator = "";
       let firstTextArrived = false;
-
-      // Store the newly created thread ID if we see it in the SSE.
       let extractedThreadId = threadId || null;
 
       while (!done) {
@@ -2598,6 +2573,16 @@ export const OpenAIAssistantsV2Extension = {
                     const cleanedText = removeCitations(partialAccumulator);
                     const formattedText = marked.parse(cleanedText);
                     responseContainer.innerHTML = formattedText;
+
+                    responseContainer.querySelectorAll("a").forEach((link) => {
+                      link.setAttribute("target", "_blank");
+                      link.setAttribute("rel", "noopener noreferrer");
+
+                      if (link.href.startsWith("mailto:")) {
+                        link.replaceWith(document.createTextNode(link.textContent));
+                      }
+                    });
+
                   } catch (e) {
                     console.error("Error parsing markdown:", e);
                   }
@@ -2610,8 +2595,7 @@ export const OpenAIAssistantsV2Extension = {
 
       if (!partialAccumulator) {
         removeWaitingContainer();
-        responseContainer.textContent =
-          "Det kan jag inte besvara, försök att omformulera din fråga.";
+        responseContainer.textContent = "Det kan jag inte besvara, försök att omformulera din fråga.";
       }
 
       window.voiceflow?.chat?.interact?.({
